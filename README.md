@@ -65,9 +65,7 @@
 
 ## 参数调优指南
 
-本节提供对 Harris 角点检测器各参数的系统化调优建议，帮助在不同图像与场景下获得最佳角点检测效果。
-
-### 问题诊断
+### 问题
 首先识别当前主要问题类型：
 
 - **检测到太多边缘**：响应函数对边缘区域过于敏感。
@@ -85,63 +83,7 @@
 | window_size (NMS 窗口) | 10 | 控制非极大值抑制时的竞争范围 | 间接影响 | 间接影响 | 5 → 15 视密度调整 |
 | threshold (响应阈值) | 10000 | 过滤弱角点响应 | 增大 → 去除弱边缘 | 增大 → 去除噪声响应 | 经验性调节，按图像动态设定 |
 
-> 注：表中推荐范围需结合图像分辨率与内容，自定义实现与 OpenCV 数值尺度可能不同，阈值需用实验微调。
-
-### 针对问题的参数组合示例
-
-#### 1. 过多边缘被检测
-推荐：
-- k = 0.06 ~ 0.08
-- kernel_size = 5
-- threshold 适当提高（例如从 10000 提升）
-
-```python
-corners = my_harris_corner_detector(
-   image,
-   k=0.06,
-   kernel_size=5,
-   window_size=10,  # 保持原 NMS 设置
-   threshold=12000  # 提高阈值过滤弱边缘
-)
-```
-
-#### 2. 噪声干扰严重
-推荐：
-- kernel_size = 5 或 7（关键项）
-- k = 0.05
-- threshold 略提高
-
-```python
-corners = my_harris_corner_detector(
-   image,
-   k=0.05,
-   kernel_size=7,
-   window_size=10,
-   threshold=14000
-)
-```
-
-#### 3. 平衡型（通用场景）
-推荐：k=0.05, kernel_size=5, window_size=10, threshold=10000~12000
-
-```python
-corners = my_harris_corner_detector(
-   image,
-   k=0.05,
-   kernel_size=5,
-   window_size=10,
-   threshold=11000
-)
-```
-
-### 参数调优策略步骤
-1. 明确主要问题类型（边缘过多 / 噪声过多 / 漏检）。
-2. 优先调整最关键参数：
-   - 边缘问题 → 先调 k。
-   - 噪声问题 → 先调 kernel_size。
-3. 微调 threshold 使角点数量合理。
-4. 最后用 window_size 控制角点稀疏度与唯一性。
-5. 每次仅修改 1 个参数并观察响应热图/可视化结果。
+> 注：表中推荐范围不一定准，推荐您自己试试
 
 ### 参数影响可视化 (理论趋势)
 - 增大 k：边缘响应下降，角点保持，噪声点减少。
@@ -149,40 +91,6 @@ corners = my_harris_corner_detector(
 - 增大 threshold：总角点数减少，保留显著响应区域。
 - 增大 window_size：同一区域仅保留最强角点，减少聚集。
 
-### 场景化示例
-
-#### 高纹理图像（砖墙 / 细密纹理）
-```python
-corners = my_harris_corner_detector(
-   image,
-   k=0.07,
-   kernel_size=5,
-   window_size=15,
-   threshold=15000
-)
-```
-
-#### 低纹理图像（平滑表面）
-```python
-corners = my_harris_corner_detector(
-   image,
-   k=0.04,
-   kernel_size=3,
-   window_size=8,
-   threshold=8000  # 降低阈值以捕获弱角点
-)
-```
-
-#### 高噪声图像（低光 / 压缩伪影）
-```python
-corners = my_harris_corner_detector(
-   image,
-   k=0.06,
-   kernel_size=7,
-   window_size=12,
-   threshold=16000
-)
-```
 
 ### 故障排除
 - 角点全无：threshold 可能过高 → 降低。
@@ -200,11 +108,3 @@ corners = my_harris_corner_detector(
 | 角点过密 | window_size | ↑ (10→15) | threshold ↑ |
 | 位置不精确 | kernel_size | ↓ (7→3) | k ↓ |
 
-### 最佳实践
-- 从“平衡”参数组合开始，再针对问题逐项微调。
-- 记录不同图像的最佳参数，形成经验库。
-- 若计划批量处理，先在代表性样本上做参数扫描。
-- 可视化中优先观察响应矩阵极值分布，辅助选择阈值。
-
----
-如需后续自动化参数搜索（网格/随机/贝叶斯优化）或加入亚像素级角点定位，可在此基础上扩展。
